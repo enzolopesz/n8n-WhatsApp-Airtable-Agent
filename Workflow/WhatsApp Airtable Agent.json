@@ -1,0 +1,461 @@
+{
+  "name": "WhatsApp Airtable Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1264,
+        -48
+      ],
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ $json.body.jsonData }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1056,
+        -48
+      ],
+      "name": "PARSE JSON"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "Name",
+              "value": "={{ $json.event.Info.PushName }}",
+              "type": "string"
+            },
+            {
+              "name": "LID",
+              "value": "={{ $json.event.Info.SenderAlt.split('@')[0].split(':')[0] }}",
+              "type": "string"
+            },
+            {
+              "name": "Message",
+              "value": "={{ $json.event.Message.conversation }}",
+              "type": "string"
+            },
+            {
+              "name": "IsGroup",
+              "value": "={{ $json.event.Info.IsGroup }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -880,
+        -48
+      ],
+      "name": "NORM JSON"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        -272
+      ],
+      "name": "DO NOTHING"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.IsGroup }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -672,
+        -48
+      ],
+      "name": "IS GROUP?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.avisaapi.com.br/api/actions/sendMessage",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('NORM JSON').item.json.LID }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.output[0].content[0].text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        960,
+        -48
+      ],
+      "name": "SENDER WPP"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appvxrtKEKh6Gkxc7",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblsv3IZDwry4n4RE",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $('IS GROUP?').item.json.LID }}",
+            "full_name": "={{ $('IS GROUP?').item.json.Name }}",
+            "first_name": "={{ $('IS GROUP?').item.json.Name }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -32,
+        192
+      ],
+      "name": "INSERT"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.avisaapi.com.br/api/actions/sendMessage",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('IS GROUP?').item.json.LID }}"
+            },
+            {
+              "name": "message",
+              "value": "=Olá, {{ $('IS GROUP?').item.json.Name }}! Muito bom ter você por aqui. Você foi cadastrado no nosso banco de dados!"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        128,
+        192
+      ],
+      "name": "SENDER WPP1"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appvxrtKEKh6Gkxc7",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblsv3IZDwry4n4RE",
+          "mode": "list"
+        },
+        "filterByFormula": "={phone} = '{{ $json.LID }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -384,
+        -48
+      ],
+      "name": "SEARCH RECORDS",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ !!$json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -176,
+        -48
+      ],
+      "name": "EXISTS"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        304,
+        192
+      ],
+      "name": "Wait"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        432,
+        -48
+      ],
+      "name": "MERGE"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "responses": {
+          "values": [
+            {}
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        640,
+        -48
+      ],
+      "name": "Message a model"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "PARSE JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PARSE JSON": {
+      "main": [
+        [
+          {
+            "node": "NORM JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NORM JSON": {
+      "main": [
+        [
+          {
+            "node": "IS GROUP?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IS GROUP?": {
+      "main": [
+        [
+          {
+            "node": "DO NOTHING",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SEARCH RECORDS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "INSERT": {
+      "main": [
+        [
+          {
+            "node": "SENDER WPP1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEARCH RECORDS": {
+      "main": [
+        [
+          {
+            "node": "EXISTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXISTS": {
+      "main": [
+        [
+          {
+            "node": "MERGE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "INSERT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SENDER WPP1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "MERGE",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "MERGE": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "SENDER WPP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  }
+}
