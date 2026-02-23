@@ -1,7 +1,6 @@
 Project 2 — WhatsApp Airtable Agent (n8n + AI)
 This project is an advanced automation workflow built in n8n that integrates WhatsApp, Airtable, and OpenAI. It is designed to manage initial user interactions by ensuring data integrity through a "Source of Truth" database before generating intelligent, AI-powered responses.
 
-Candidate
 Enzo Lopes
 
 Workflow designed to optimize data ingestion and lead management
